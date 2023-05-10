@@ -7,3 +7,6 @@
 [submodule "external/oneTBB"]
 	path = external/oneTBB
 	url = https://github.com/oneapi-src/oneTBB.git
+[submodule "external/stb"]
+	path = external/stb
+	url = https://github.com/nothings/stb.git

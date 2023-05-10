@@ -55,7 +55,8 @@ if(WIN32)
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
-add_subdirectory(filter)
+add_subdirectory(external)
+add_subdirectory(pip)
 
 # add_subdirectory(external/googletest)
 # add_subdirectory(external/benchmark)
@@ -66,7 +67,8 @@ add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} benchmark::benchmark)
 target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
 target_link_libraries(${PROJECT_NAME} TBB::tbb)
-target_link_libraries(${PROJECT_NAME} filter)
+target_link_libraries(${PROJECT_NAME} pip)
+target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECTDIR="${PROJECT_SOURCE_DIR}")
 
 # get_target_property(TBB_DLL TBB::tbb IMPORTED_LOCATION_DEBUG)
 add_custom_command(TARGET ${PROJECT_NAME}
