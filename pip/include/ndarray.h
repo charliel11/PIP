@@ -30,6 +30,8 @@ class ndarray {
   }
 
 public:
+  using value_type = T;
+
   ndarray() = default;
   ndarray(ndarray const &) = default;
   ndarray(ndarray &&) = default;
