@@ -56,6 +56,7 @@ if(WIN32)
 endif()
 
 add_subdirectory(external)
+add_subdirectory(benchmark)
 add_subdirectory(pip)
 
 # add_subdirectory(external/googletest)
