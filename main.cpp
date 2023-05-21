@@ -7,14 +7,13 @@
 #include <tbb/tbb.h>
 #include <vector>
 
-
 using namespace std;
 using namespace pip;
 
 int main() {
   Image a, b;
   read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
-  median_blur(a, b, 3, 3);
+  median_blur(a, b, 9, 9);
   write_image(b, (std::string(PROJECTDIR) + "/test.jpg").c_str());
   // auto mp = tbb::global_control::max_allowed_parallelism;
   // tbb::global_control gc(mp, 1);
