@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cassert>
 #include <exception>
+#include <intrin.h>
 #include <iostream>
 #include <iterator>
 #include <median_blur.h>
@@ -11,7 +12,6 @@
 #include <tbb/tbb.h>
 #include <type_traits>
 #include <vector>
-#include <x86intrin.h>
 
 namespace pip {
 
@@ -25,9 +25,9 @@ void min_max(simd_type &a, simd_type &b) {
   b = std::max(t, b);
 }
 
-#if defined(__AVX512__)
+#if defined(__AVX512BW__)
 
-#define SIMD_INT __m512i
+#define simd_int __m512i
 
 template <> inline void min_max<uint8_t, __m512i>(__m512i &a, __m512i &b) {
   __m512i t = a;
@@ -50,7 +50,7 @@ template <> inline void min_max<float_t, __m512>(__m512 &a, __m512 &b) {
 
 #elif defined(__AVX2__)
 
-#define SIMD_INT __m256i
+#define simd_int __m256i
 
 template <> void min_max<uint8_t, __m256i>(__m256i &a, __m256i &b) {
   __m256i t = a;
@@ -70,9 +70,9 @@ template <> void min_max<float_t, __m256>(__m256 &a, __m256 &b) {
   b = _mm256_max_ps(b, t);
 }
 
-#elif defined(__SSE__)
+#elif defined(__SSE2__)
 
-#define SIMD_INT __m128i
+#define simd_int __m128i
 
 template <> void min_max<uint8_t, __m128i>(__m128i &a, __m128i &b) {
   __m128i t = a;
@@ -91,6 +91,10 @@ template <> void min_max<float_t, __m128>(__m128 &a, __m128 &b) {
   a = _mm_min_ps(a, b);
   b = _mm_max_ps(b, t);
 }
+
+#else
+
+#define simd_int uint8_t
 
 #endif
 
@@ -167,7 +171,7 @@ void median_blur(const Image &in_img, Image &out_img, int mask_width,
   constexpr size_t blocksize = 64;
   int n = mask_width * mask_height;
 
-  using buffer_type = SIMD_INT;
+  using buffer_type = simd_int;
 
   constexpr int ratio = sizeof(buffer_type) / sizeof(Image::value_type);
 

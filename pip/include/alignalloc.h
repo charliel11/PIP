@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <new>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -12,7 +13,9 @@ namespace detail {
 inline void *allocate_aligned_memory(size_t align, size_t size) {
   return _aligned_malloc(size, align);
 }
-inline void deallocate_aligned_memory(void *ptr) noexcept { _aligned_free(ptr); }
+inline void deallocate_aligned_memory(void *ptr) noexcept {
+  _aligned_free(ptr);
+}
 } // namespace detail
 
 template <typename T, size_t Align = 64> class AlignedAllocator;
@@ -47,15 +50,21 @@ public:
 public:
   AlignedAllocator() noexcept {}
 
-  template <class U> AlignedAllocator(const AlignedAllocator<U, Align> &) noexcept {}
+  template <class U>
+  AlignedAllocator(const AlignedAllocator<U, Align> &) noexcept {}
 
-  size_type max_size() const noexcept { return (size_type(~0) - size_type(Align)) / sizeof(T); }
+  size_type max_size() const noexcept {
+    return (size_type(~0) - size_type(Align)) / sizeof(T);
+  }
 
   pointer address(reference x) const noexcept { return std::addressof(x); }
 
-  const_pointer address(const_reference x) const noexcept { return std::addressof(x); }
+  const_pointer address(const_reference x) const noexcept {
+    return std::addressof(x);
+  }
 
-  pointer allocate(size_type n, typename AlignedAllocator<void, Align>::const_pointer = 0) {
+  pointer allocate(size_type n,
+                   typename AlignedAllocator<void, Align>::const_pointer = 0) {
     const size_type alignment = static_cast<size_type>(Align);
     void *ptr = detail::allocate_aligned_memory(alignment, n * sizeof(T));
     if (ptr == nullptr) {
@@ -65,7 +74,9 @@ public:
     return reinterpret_cast<pointer>(ptr);
   }
 
-  void deallocate(pointer p, size_type) noexcept { return detail::deallocate_aligned_memory(p); }
+  void deallocate(pointer p, size_type) noexcept {
+    return detail::deallocate_aligned_memory(p);
+  }
 
   template <class U, class... Args> void construct(U *p, Args &&...args) {
     ::new (reinterpret_cast<void *>(p)) U(std::forward<Args>(args)...);
@@ -93,13 +104,19 @@ public:
 public:
   AlignedAllocator() noexcept {}
 
-  template <class U> AlignedAllocator(const AlignedAllocator<U, Align> &) noexcept {}
+  template <class U>
+  AlignedAllocator(const AlignedAllocator<U, Align> &) noexcept {}
 
-  size_type max_size() const noexcept { return (size_type(~0) - size_type(Align)) / sizeof(T); }
+  size_type max_size() const noexcept {
+    return (size_type(~0) - size_type(Align)) / sizeof(T);
+  }
 
-  const_pointer address(const_reference x) const noexcept { return std::addressof(x); }
+  const_pointer address(const_reference x) const noexcept {
+    return std::addressof(x);
+  }
 
-  pointer allocate(size_type n, typename AlignedAllocator<void, Align>::const_pointer = 0) {
+  pointer allocate(size_type n,
+                   typename AlignedAllocator<void, Align>::const_pointer = 0) {
     const size_type alignment = static_cast<size_type>(Align);
     void *ptr = detail::allocate_aligned_memory(alignment, n * sizeof(T));
     if (ptr == nullptr) {
@@ -109,7 +126,9 @@ public:
     return reinterpret_cast<pointer>(ptr);
   }
 
-  void deallocate(pointer p, size_type) noexcept { return detail::deallocate_aligned_memory(p); }
+  void deallocate(pointer p, size_type) noexcept {
+    return detail::deallocate_aligned_memory(p);
+  }
 
   template <class U, class... Args> void construct(U *p, Args &&...args) {
     ::new (reinterpret_cast<void *>(p)) U(std::forward<Args>(args)...);

@@ -6,12 +6,10 @@
 //     }                                                                          \
 //   }                                                                            \
 
-#include <Image.h>
 #include <benchmark/benchmark.h>
 #include <median_blur.h>
 #include <rwimage.h>
 #include <tbb/global_control.h>
-#include <tbb/tbb.h>
 
 #define BM(func) BENCHMARK(BM_##func)->Unit(benchmark::kMillisecond)
 #define N 17
