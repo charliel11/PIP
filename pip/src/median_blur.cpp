@@ -1,11 +1,10 @@
 #include <Image.h>
 #include <algorithm>
 #include <cassert>
-#include <exception>
 #include <intrin.h>
-#include <iostream>
 #include <iterator>
 #include <median_blur.h>
+#include <oneapi/tbb/partitioner.h>
 #include <stdint.h>
 #include <tbb/blocked_range2d.h>
 #include <tbb/partitioner.h>
@@ -94,6 +93,7 @@ template <> void min_max<float_t, __m128>(__m128 &a, __m128 &b) {
 
 #else
 
+#define __no_intrinic__
 #define simd_int uint8_t
 
 #endif
@@ -125,16 +125,17 @@ void pop_min_max_to_end(Iterator _First, Iterator _End) {
   }
 }
 
-template <typename T, typename image_type>
-void median_selection(Vector_Aligned64<T> &arr) {
-  auto _First = arr.begin();
-  auto _End = arr.end();
+template <typename packed_type, typename Iterator,
+          typename = std::is_same<
+              typename std::iterator_traits<Iterator>::iterator_category,
+              std::random_access_iterator_tag>>
+void median_selection(Iterator _First, Iterator _End) {
   auto n = std::distance(_First, _End);
   auto first_n = (n + 1) / 2 + 1;
   int64_t cnt = n - first_n;
   auto _Mid = _First + first_n;
   while (cnt >= 0) {
-    pop_min_max_to_end<image_type>(_First, _Mid);
+    pop_min_max_to_end<packed_type>(_First, _Mid);
     ++_First;
     --_End;
     --cnt;
@@ -142,70 +143,134 @@ void median_selection(Vector_Aligned64<T> &arr) {
   }
 }
 
-template <typename T, typename F>
-void blur_2D(const Image &img_i, Image &img_o, int row, int col, int ch,
-             int mask_w, int mask_h, Vector_Aligned64<T> &arr, F func) {
+// template <typename T, typename image_type>
+// void median_selection(Vector_Aligned64<T> &arr) {
+//   auto _First = arr.begin();
+//   auto _End = arr.end();
+//   auto n = std::distance(_First, _End);
+//   auto first_n = (n + 1) / 2 + 1;
+//   int64_t cnt = n - first_n;
+//   auto _Mid = _First + first_n;
+//   while (cnt >= 0) {
+//     pop_min_max_to_end<image_type>(_First, _Mid);
+//     ++_First;
+//     --_End;
+//     --cnt;
+//     std::swap(*(_Mid - 1), *_End);
+//   }
+// }
 
+template <typename T, typename image_type>
+void median_selection_2row(Vector_Aligned64<T> &arr, int mask_width) {
+  auto _First = arr.begin();
+  auto _End = arr.end();
+  auto n = std::distance(_First, _End);
+
+  // common part
+  auto _C_n = n - 2 * mask_width;
+  int _C_cnt = (_C_n - (mask_width + 1)) >> 1;
+  auto _C_First = _First + mask_width;
+  auto _C_Mid = _C_First + (_C_n + 1) / 2 + 1;
+  auto _C_End = _End - mask_width;
+  while (_C_cnt > 0) {
+    pop_min_max_to_end<image_type>(_C_First, _C_End);
+    ++_C_First;
+    --_C_End;
+    std::swap(*(_C_Mid - 1), *_C_End);
+    --_C_cnt;
+  }
+
+  assert(std::distance(_C_First, _C_End) == mask_width + 1);
+  // first row
+  std::copy(_C_First, _C_End, arr.begin() + mask_width);
+  median_selection<image_type>(arr.begin(), arr.begin() + 2 * mask_width + 1);
+  // second row
+  std::copy(_C_First, _C_End, arr.end() - 2 * mask_width - 1);
+  median_selection<image_type>(arr.end() - 2 * mask_width - 1, arr.end());
+
+  return;
+}
+
+template <typename T, typename F>
+void blur_2D(const Image &img_i, Image &img_o, int r_begin, int r_end,
+             int c_begin, int c_end, int ch, Vector_Aligned64<T> &arr, F func) {
   int i = 0;
-  for (int r = row - (mask_h >> 1); r <= row + (mask_h >> 1); ++r) {
-    _mm_prefetch((const char *)&img_i(col - (mask_w >> 1), r + 1, ch),
-                 _MM_HINT_T0);
-    for (int c = col - (mask_w >> 1); c <= col + (mask_w >> 1); ++c) {
-      // auto ptr = (T *)&img_i(c, r, ch);
-      memcpy((void *)&arr[i], (void *)&img_i(c, r, ch), sizeof(T));
-      // _mm256_store_si256(&arr[i], _mm256_loadu_si256((T *)&img_i(c, r,
-      // ch)));
+  for (int r = r_begin; r <= r_end; ++r) {
+    _mm_prefetch((const char *)&img_i(c_begin, r + 1, ch), _MM_HINT_T0);
+    for (int c = c_begin; c <= c_end; ++c) {
+      memcpy(&arr[i], &img_i(c, r, ch), sizeof(T));
       ++i;
     }
   }
 
-  func(arr);
+  // func(arr);
+  // func(arr.begin(), arr.end());
+  func(arr, c_end - c_begin + 1);
 
   return;
 }
 
 void median_blur(const Image &in_img, Image &out_img, int mask_width,
                  int mask_height) {
+  using buffer_type = simd_int;
+  using vector_aligned64 = Vector_Aligned64<buffer_type>;
+  constexpr size_t blocksize = 64;
+  constexpr int ratio = sizeof(buffer_type) / sizeof(Image::value_type);
+
   auto [width, height, channel] = in_img.shape();
   out_img.reshape(width, height, channel);
-  constexpr size_t blocksize = 64;
-  int n = mask_width * mask_height;
 
-  using buffer_type = simd_int;
-
-  constexpr int ratio = sizeof(buffer_type) / sizeof(Image::value_type);
+  int extend_row = mask_width >> 1;
+  int extend_col = mask_height >> 1;
+  int a = 1;
+  int n = (mask_height + a) * mask_width;
 
   for (int ch = 0; ch < channel; ++ch) {
     tbb::parallel_for(
-        tbb::blocked_range2d<size_t, size_t>{0, height, blocksize, 0, width,
-                                             blocksize},
+        tbb::blocked_range2d<size_t, size_t>{0, height >> a, blocksize >> 1, 0,
+                                             width, blocksize},
         [&](const tbb::blocked_range2d<size_t, size_t> &range) {
           int r_begin = range.rows().begin();
           int r_end = range.rows().end();
           int c_begin = range.cols().begin();
           int c_end = range.cols().end();
 
-          thread_local Vector_Aligned64<buffer_type> arr(mask_height *
-                                                         mask_width);
+          vector_aligned64 arr((mask_height + a) * mask_width);
 
           for (int r = r_begin; r < r_end; ++r) {
             for (int c = c_begin; c < c_end; c += ratio) {
 
-              // auto nth_element = [](Vector_Aligned64<buffer_type> &arr) {
-              //   int med = arr.size() >> 1;
-              //   std::nth_element(arr.begin(), arr.begin() + med,
-              //   arr.end());
-              // };
+#if defined(__no_intrinic__)
+              auto nth_element = [](vector_aligned64 &arr) {
+                int med = arr.size() >> 1;
+                std::nth_element(arr.begin(), arr.begin() + med, arr.end());
+              };
 
-              // blur_2D(in_img, out_img, r, c, ch, mask_width, mask_height,
-              // arr,
-              //         nth_element);
-
-              blur_2D(in_img, out_img, r, c, ch, mask_width, mask_height, arr,
-                      median_selection<buffer_type, Image::value_type>);
-
-              memcpy((void *)&out_img(c, r, ch), (void *)&arr[n >> 1],
+              blur_2D(in_img, out_img, r - extend_row, r + extend_row,
+                      c - extend_col, c + extend_col, ch, arr, nth_element);
+              out_img(c, r, ch) = arr[n >> 1];
+#else
+              int rr = (a + 1) * r;
+              // blur_2D(in_img, out_img, rr - extend_row, rr + extend_row + a,
+              //         c - extend_col, c + extend_col, ch, arr,
+              //         median_selection<buffer_type, Image::value_type>);
+              // memcpy(&out_img(c, rr, ch), &arr[n >> 1], sizeof(buffer_type));
+              blur_2D(in_img, out_img, rr - extend_row, rr + extend_row + a,
+                      c - extend_col, c + extend_col, ch, arr,
+                      median_selection_2row<buffer_type, Image::value_type>);
+              memcpy(&out_img(c, rr, ch), &arr[mask_width + 1],
                      sizeof(buffer_type));
+              memcpy(&out_img(c, rr + 1, ch), &arr[n - mask_width - 1],
+                     sizeof(buffer_type));
+#endif
+
+              // blur_2D(in_img, out_img, rr, c, ch, mask_width, mask_height,
+              // arr,
+              //         median_selection_2row<buffer_type, Image::value_type>);
+
+              // memcpy(&out_img(c, rr, ch), &arr[n >> 1], sizeof(buffer_type));
+              // memcpy(&out_img(c, rr + 1, ch), &arr[(n >> 1) + mask_width],
+              //        sizeof(buffer_type));
               // _mm256_storeu_si256((buffer_type *)&out_img(c, r, ch),
               //                     arr[n >> 1]);
             }
