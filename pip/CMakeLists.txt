@@ -1,5 +1,5 @@
 file(GLOB_RECURSE srcs CONFIGURE_DEPENDS src/*.cpp include/*.h)
-add_library(pip STATIC ${srcs})
+add_library(pip SHARED ${srcs})
 target_link_libraries(pip PRIVATE TBB::tbb)
 target_link_libraries(pip PRIVATE stb)
 target_include_directories(pip PUBLIC include)

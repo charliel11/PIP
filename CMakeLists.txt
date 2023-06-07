@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -6,37 +6,18 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -march=native -mavx2")
 
-# set(TBB_INSTALL_PREFIX "external/oneTBB/install")
-# set(BENCHMARK_INSTALL_PREFIX "external/benchmark/install")
-# set(GTEST_INSTALL_PREFIX "external/googletest/install")
+project(PIP LANGUAGES C CXX)
 
-# set(CMAKE_PREFIX_PATH
-# "${TBB_INSTALL_PREFIX}/lib/cmake/TBB"
-# "${BENCHMARK_INSTALL_PREFIX}/lib/cmake/benchmark"
-# "${GTEST_INSTALL_PREFIX}/lib/cmake/GTest")
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-if(${CMAKE_BUILD_TYPE} MATCHES "Release")
-    set(TBB_DIR "external/install/Release/lib/cmake/TBB")
-    set(benchmark_DIR "external/install/Release/lib/cmake/benchmark")
+set(TBB_DIR "external/install/${CMAKE_BUILD_TYPE}/lib/cmake/TBB")
+set(benchmark_DIR "external/install/${CMAKE_BUILD_TYPE}/lib/cmake/benchmark")
 
-    # set(GTest_DIR "external/install/Release/lib/cmake/GTest")
-    # set(CMAKE_PREFIX_PATH "external/install/Release")
-endif()
-
-if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-    set(TBB_DIR "external/install/Debug/lib/cmake/TBB")
-    set(benchmark_DIR "external/install/Debug/lib/cmake/benchmark")
-
-    # set(GTest_DIR "external/install/Debug/lib/cmake/GTest")
-    # set(CMAKE_PREFIX_PATH "external/install/Debug")
-endif()
-
+# set(GTest_DIR "external/install/Release/lib/cmake/GTest")
+# set(CMAKE_PREFIX_PATH "external/install/Release")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE})
-
-project(PIP LANGUAGES C CXX)
 
 find_package(TBB CONFIG REQUIRED)
 find_package(benchmark CONFIG REQUIRED)
@@ -59,12 +40,8 @@ add_subdirectory(external)
 add_subdirectory(benchmark)
 add_subdirectory(pip)
 
-# add_subdirectory(external/googletest)
-# add_subdirectory(external/benchmark)
-# add_subdirectory(external/oneTBB)
 add_executable(${PROJECT_NAME} main.cpp)
 
-# target_link_libraries(${PROJECT_NAME} GTest::gtest)
 target_link_libraries(${PROJECT_NAME} benchmark::benchmark)
 target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
 target_link_libraries(${PROJECT_NAME} TBB::tbb)

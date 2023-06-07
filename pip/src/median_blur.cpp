@@ -1,7 +1,7 @@
 #include <Image.h>
 #include <algorithm>
 #include <cassert>
-#include <intrin.h>
+// #include <intrin.h>
 #include <iterator>
 #include <median_blur.h>
 #include <oneapi/tbb/partitioner.h>
@@ -11,6 +11,7 @@
 #include <tbb/tbb.h>
 #include <type_traits>
 #include <vector>
+#include <x86intrin.h>
 
 namespace pip {
 

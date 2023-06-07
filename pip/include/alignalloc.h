@@ -9,13 +9,21 @@
 #include <utility>
 
 // https://stackoverflow.com/questions/12942548/making-stdvector-allocate-aligned-memory
+
 namespace detail {
+#if defined(_MSC_VER)
 inline void *allocate_aligned_memory(size_t align, size_t size) {
   return _aligned_malloc(size, align);
 }
 inline void deallocate_aligned_memory(void *ptr) noexcept {
   _aligned_free(ptr);
 }
+#else
+inline void *allocate_aligned_memory(size_t align, size_t size) {
+  return std::aligned_alloc(align, size);
+}
+inline void deallocate_aligned_memory(void *ptr) noexcept { std::free(ptr); }
+#endif
 } // namespace detail
 
 template <typename T, size_t Align = 64> class AlignedAllocator;

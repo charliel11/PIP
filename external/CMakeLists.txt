@@ -1,4 +1,4 @@
-file(GLOB_RECURSE srcs CONFIGURE_DEPENDS stb/*.h)
+file(GLOB srcs CONFIGURE_DEPENDS stb/*.h)
 
 project(stb LANGUAGES C CXX)
 
