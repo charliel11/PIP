@@ -1,4 +1,5 @@
 file(GLOB_RECURSE srcs CONFIGURE_DEPENDS src/*.cpp include/*.h)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 add_library(pip SHARED ${srcs})
 target_link_libraries(pip PRIVATE TBB::tbb)
 target_link_libraries(pip PRIVATE stb)
