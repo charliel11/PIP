@@ -10,3 +10,6 @@
 [submodule "external/stb"]
 	path = external/stb
 	url = https://github.com/nothings/stb.git
+[submodule "external/ninja"]
+	path = external/ninja
+	url = https://github.com/ninja-build/ninja.git
