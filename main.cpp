@@ -1,8 +1,10 @@
-#include <Image.h>
 #include <iostream>
-#include <median_blur.h>
-#include <rwimage.h>
 #include <vector>
+
+#include <Image.h>
+#include <median_blur.h>
+#include <resize.h>
+#include <rwimage.h>
 
 using namespace std;
 using namespace pip;
@@ -10,6 +12,8 @@ using namespace pip;
 int main() {
   Image a, b, c;
   read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
+
+  resize(a, b, 512, 512);
 
   median_blur(a, b, 15, 15);
   write_image(b, (std::string(PROJECTDIR) + "/test2.jpg").c_str());
