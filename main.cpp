@@ -11,9 +11,10 @@ using namespace pip;
 
 int main() {
   Image a, b, c;
+  ImageF32 d;
   read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
 
-  resize(a, b, 512, 512);
+  resize(a, d, 512, 512);
 
   median_blur(a, b, 15, 15);
   write_image(b, (std::string(PROJECTDIR) + "/test2.jpg").c_str());

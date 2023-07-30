@@ -3,13 +3,12 @@
 #include <cassert>
 // #include <intrin.h>
 #include <iterator>
-#include <median_blur.h>
 #include <stdint.h>
 #include <type_traits>
 #include <vector>
 #include <x86intrin.h>
 
-#include <Image.h>
+#include <median_blur.h>
 
 #include <oneapi/tbb/partitioner.h>
 #include <tbb/blocked_range2d.h>
