@@ -25,4 +25,7 @@ using Vector_Aligned64 = std::vector<T, AlignedAllocator<T>>;
 template <typename T>
 using Vector_Aligned32 = std::vector<T, AlignedAllocator<T, 32>>;
 
+template <typename T>
+using Vector_Aligned16 = std::vector<T, AlignedAllocator<T, 16>>;
+
 } // namespace pip

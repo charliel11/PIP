@@ -12,7 +12,7 @@ static void BM_resize_1(benchmark::State &state) {
   ImageF32 b;
   read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
   for (auto _ : state) {
-    resize(a, b, 512, 512);
+    resize(a, b, 513, 512);
   }
   benchmark::DoNotOptimize(a);
 }
