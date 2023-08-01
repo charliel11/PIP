@@ -17,22 +17,26 @@ namespace pip {
 #define simd_float __m256
 #define simd_set1 _mm256_set1_ps
 #define simd_round _mm256_round_ps
+#define simd_storeu _mm256_storeu_ps
 
 // #define simd_float __m512
 // #define simd_set1 _mm512_set1_ps
 // #define simd_round _mm512_roundscale_ps
+// #define simd_storeu _mm512_storeu_ps
 
 #elif defined(__AVX2__)
 
 #define simd_float __m256
 #define simd_set1 _mm256_set1_ps
 #define simd_round _mm256_round_ps
+#define simd_storeu _mm256_storeu_ps
 
 #elif defined(__SSE2__)
 
 #define simd_float __m128
 #define simd_set1 _mm_set1_ps
 #define simd_round _mm_round_ps
+#define simd_storeu _mm_storeu_ps
 
 #else
 
@@ -55,10 +59,8 @@ void resize(const Image &in, ImageF32 &out, std::size_t width,
   constexpr int simd_n = sizeof(simd_float) / sizeof(float);
 
   for (int ch = 0; ch < channel; ++ch) {
-
-#pragma omp parallel for num_threads(20)
+#pragma omp parallel for
     for (int r = 0; r < height; ++r) {
-
       simd_float int_part_c;
       simd_float fract_part_c;
       simd_float inv_fract_part_c;
@@ -70,16 +72,15 @@ void resize(const Image &in, ImageF32 &out, std::size_t width,
       float int_part_r;
       float fract_part_r = modff(r * h_ratio, &int_part_r); // r-r0
       float inv_fract_part_r = 1.0 - fract_part_r;          // 1-(r-r0)
+      int in_r = static_cast<int>(int_part_r);
 
-      // for (int c = 0; c < width; ++c) {
       int c = 0;
       for (; c <= width - simd_n; c += simd_n) {
-
         float *t = reinterpret_cast<float *>(&fract_part_c);
-        int startNum = c;
+        float startNum = static_cast<float>(c);
         std::generate(t, t + simd_n, [&] {
           float res = startNum * w_ratio;
-          startNum += 1;
+          startNum += 1.0f;
           return res;
         });
 
@@ -88,8 +89,7 @@ void resize(const Image &in, ImageF32 &out, std::size_t width,
         inv_fract_part_c = 1.0 - fract_part_c;
 
         for (int i = 0; i < simd_n; ++i) {
-          int in_c = (int)int_part_c[i];
-          int in_r = (int)int_part_r;
+          int in_c = static_cast<int>(int_part_c[i]);
           v1[i] = in(in_c, in_r, ch);         // A
           v2[i] = in(in_c + 1, in_r, ch);     // B
           v3[i] = in(in_c, in_r + 1, ch);     // C
@@ -103,9 +103,7 @@ void resize(const Image &in, ImageF32 &out, std::size_t width,
 
         simd_float res = c1 * v1 + c2 * v2 + c3 * v3 + c4 * v4;
 
-        // _mm256_stream_ps(&out(c, r, ch), res);
-        _mm256_storeu_ps(&out(c, r, ch), res);
-        // memcpy(&out(c, r, ch), &res, sizeof(simd_float));
+        simd_storeu(&out(c, r, ch), res);
       }
 
       for (; c < width; ++c) {
@@ -118,8 +116,7 @@ void resize(const Image &in, ImageF32 &out, std::size_t width,
         float c3 = inv_fract_part_c * fract_part_r;
         float c4 = fract_part_c * fract_part_r;
 
-        int in_c = (int)int_part_c;
-        int in_r = (int)int_part_r;
+        int in_c = static_cast<int>(int_part_c);
 
         float v1 = in(in_c, in_r, ch);         // A
         float v2 = in(in_c + 1, in_r, ch);     // B
