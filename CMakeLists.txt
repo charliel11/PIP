@@ -4,9 +4,24 @@ set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 set( CMAKE_CXX_EXTENSIONS OFF )
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -march=native -mavx2 -fexceptions -fopenmp" )
-
 project( PIP LANGUAGES C CXX )
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # using Clang  
+    if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        # using clang with clang-cl front end
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -openmp" )
+    elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
+        # using clang with regular front end
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -mavx2 -fexceptions -fopenmp" )
+    endif()
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # using GCC
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    # using Intel C++
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # using Visual Studio C++
+endif()
 
 if( NOT CMAKE_BUILD_TYPE )
     set( CMAKE_BUILD_TYPE Release )

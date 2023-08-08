@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
-#include <immintrin.h>
 #include <math.h>
 #include <numeric>
 #include <x86intrin.h>

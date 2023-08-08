@@ -1,4 +1,3 @@
-#include "Image.h"
 #include <benchmark/benchmark.h>
 #include <resize.h>
 #include <rwimage.h>
@@ -17,7 +16,7 @@ static void BM_resize_1(benchmark::State &state) {
   }
   benchmark::DoNotOptimize(b);
 }
-// BM(resize_1);
+BM(resize_1);
 
 constexpr size_t n = 1 << 28;
 Vector_Aligned64<float> a(n, 0);
@@ -30,18 +29,25 @@ void BM_serial_add(benchmark::State &state) {
     benchmark::DoNotOptimize(a);
   }
 }
-BM(serial_add);
+// BM(serial_add);
 
 void BM_simd_add(benchmark::State &state) {
+#define NUM_ELEMENTS (10000000)
   for (auto _ : state) {
-    for (size_t i = 0; i < n; i += 8) {
-      __m256 simd = _mm256_load_ps(&a[i]);
-      _mm256_stream_ps(&a[i], simd + 1);
+    int *array = (int *)malloc(sizeof(int) * NUM_ELEMENTS);
+    // Perform a memory-bound operation - access array elements in a loop
+    int i;
+    for (i = 0; i < NUM_ELEMENTS; i++) {
+      array[i] = i;       // Write to the array (memory write)
+      int val = array[i]; // Read from the array (memory read)
     }
-    benchmark::DoNotOptimize(a);
+
+    // Free the allocated memory
+    free(array);
+    benchmark::DoNotOptimize(array);
   }
 }
-BM(simd_add);
+// BM(simd_add);
 
 // void BM_parallel_add(benchmark::State &state) {
 //   for (auto _ : state) {
