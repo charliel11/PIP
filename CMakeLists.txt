@@ -17,9 +17,11 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # using GCC
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -mavx2 -fexceptions -fopenmp" )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     # using Intel C++
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -openmp" )
     # using Visual Studio C++
 endif()
 
