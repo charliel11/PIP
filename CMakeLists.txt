@@ -4,23 +4,25 @@ set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 set( CMAKE_CXX_EXTENSIONS OFF )
 
+set(CMAKE_MAKE_PROGRAM ${CMAKE_CURRENT_SOURCE_DIR}/external/install/Release/bin/ninja.exe CACHE FILEPATH "" FORCE)
+
 project( PIP LANGUAGES C CXX )
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # using Clang  
-    if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+if( CMAKE_CXX_COMPILER_ID STREQUAL "Clang" )
+    # using Clang
+    if( CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC" )
         # using clang with clang-cl front end
         set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -openmp" )
-    elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
+    elseif( CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU" )
         # using clang with regular front end
-        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -mavx2 -fexceptions -fopenmp" )
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -march=native -fexceptions -fopenmp" )
     endif()
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+elseif( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
     # using GCC
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -mavx2 -fexceptions -fopenmp" )
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    # using Intel C++
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -march=native -fexceptions -fopenmp" )
+elseif( CMAKE_CXX_COMPILER_ID STREQUAL "Intel" )
+# using Intel C++
+elseif( CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -openmp" )
     # using Visual Studio C++
 endif()

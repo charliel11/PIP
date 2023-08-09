@@ -12,7 +12,7 @@ if ($IsWindows) {
         }
     }
     
-    Invoke-CmdScript("C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat")
+    Invoke-CmdScript("C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvars64.bat")
     $CC = "-DCMAKE_C_COMPILER:string=clang-cl" 
     $CXX = "-DCMAKE_CXX_COMPILER:string=clang-cl"
 }

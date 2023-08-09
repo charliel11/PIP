@@ -7,7 +7,7 @@
 
 using namespace pip;
 
-static void BM_resize_1(benchmark::State &state) {
+static void BM_resize_512(benchmark::State &state) {
   Image a;
   ImageF32 b;
   read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
@@ -16,7 +16,29 @@ static void BM_resize_1(benchmark::State &state) {
   }
   benchmark::DoNotOptimize(b);
 }
-BM(resize_1);
+BM(resize_512);
+
+static void BM_resize_2048(benchmark::State &state) {
+  Image a;
+  ImageF32 b;
+  read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
+  for (auto _ : state) {
+    resize(a, b, 2048, 2048);
+  }
+  benchmark::DoNotOptimize(b);
+}
+BM(resize_2048);
+
+static void BM_resize_6144(benchmark::State &state) {
+  Image a;
+  ImageF32 b;
+  read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
+  for (auto _ : state) {
+    resize(a, b, 6144, 6144);
+  }
+  benchmark::DoNotOptimize(b);
+}
+BM(resize_6144);
 
 constexpr size_t n = 1 << 28;
 Vector_Aligned64<float> a(n, 0);
