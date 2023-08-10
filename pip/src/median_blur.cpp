@@ -107,9 +107,10 @@ template <> void min_max<float_t, __m128>(__m128 &a, __m128 &b) {
 reference: pairwise sorting network
 */
 template <typename packed_type, typename Iterator,
-          typename = std::is_same<
-              typename std::iterator_traits<Iterator>::iterator_category,
-              std::random_access_iterator_tag>>
+          std::enable_if_t<std::is_same_v<typename std::iterator_traits<
+                                              Iterator>::iterator_category,
+                                          std::random_access_iterator_tag>,
+                           int> = 0>
 void pop_min_max_to_end(Iterator _First, Iterator _End) {
   // _Adl_verify_range(_First, _End);
   auto n = std::distance(_First, _End);
@@ -129,9 +130,10 @@ void pop_min_max_to_end(Iterator _First, Iterator _End) {
 }
 
 template <typename packed_type, typename Iterator,
-          typename = std::is_same<
-              typename std::iterator_traits<Iterator>::iterator_category,
-              std::random_access_iterator_tag>>
+          std::enable_if_t<std::is_same_v<typename std::iterator_traits<
+                                              Iterator>::iterator_category,
+                                          std::random_access_iterator_tag>,
+                           int> = 0>
 void median_selection(Iterator _First, Iterator _End) {
   auto n = std::distance(_First, _End);
   auto first_n = (n + 1) / 2 + 1;

@@ -14,40 +14,37 @@ namespace pip {
 #if defined(__AVX512BW__)
 
 #define simd_float __m256
-#define simd_set1 _mm256_set1_ps
 #define simd_round _mm256_round_ps
 #define simd_storeu _mm256_storeu_ps
-
 // #define simd_float __m512
-// #define simd_set1 _mm512_set1_ps
 // #define simd_round _mm512_roundscale_ps
 // #define simd_storeu _mm512_storeu_ps
 
 #elif defined(__AVX2__)
 
 #define simd_float __m256
-#define simd_set1 _mm256_set1_ps
 #define simd_round _mm256_round_ps
 #define simd_storeu _mm256_storeu_ps
 
 #elif defined(__SSE2__)
 
 #define simd_float __m128
-#define simd_set1 _mm_set1_ps
 #define simd_round _mm_round_ps
 #define simd_storeu _mm_storeu_ps
 
 #else
 
 #define __no_intrinic__
-#define simd_float float
+#error "not support"
 
 #endif
 
-void resize(const Image &in, ImageF32 &out, std::size_t width,
-            std::size_t height) {
+void resize(const Image &in, ImageF32 &out, size_t width, size_t height) {
 
-  auto [_width, _height, channel] = in.shape();
+  size_t _width = in.shape()[0];
+  size_t _height = in.shape()[1];
+  size_t channel = in.shape()[2];
+
   out.reshape(width, height, channel);
 
   float w_ratio =
@@ -72,6 +69,7 @@ void resize(const Image &in, ImageF32 &out, std::size_t width,
       float fract_part_r = modff(r * h_ratio, &int_part_r); // r-r0
       float inv_fract_part_r = 1.0 - fract_part_r;          // 1-(r-r0)
       int in_r = static_cast<int>(int_part_r);
+      int in_next_r = std::min(in_r + 1, static_cast<int>(_height - 1));
 
       int c = 0;
       for (; c <= width - simd_n; c += simd_n) {
@@ -89,10 +87,12 @@ void resize(const Image &in, ImageF32 &out, std::size_t width,
 
         for (int i = 0; i < simd_n; ++i) {
           int in_c = static_cast<int>(int_part_c[i]);
-          v1[i] = in(in_c, in_r, ch);         // A
-          v2[i] = in(in_c + 1, in_r, ch);     // B
-          v3[i] = in(in_c, in_r + 1, ch);     // C
-          v4[i] = in(in_c + 1, in_r + 1, ch); // D
+          int in_next_c = std::min(in_c + 1, static_cast<int>(_width - 1));
+
+          v1[i] = in(in_c, in_r, ch);           // A
+          v2[i] = in(in_next_c, in_r, ch);      // B
+          v3[i] = in(in_c, in_next_r, ch);      // C
+          v4[i] = in(in_next_c, in_next_r, ch); // D
         }
 
         simd_float c1 = inv_fract_part_c * inv_fract_part_r;
@@ -116,11 +116,12 @@ void resize(const Image &in, ImageF32 &out, std::size_t width,
         float c4 = fract_part_c * fract_part_r;
 
         int in_c = static_cast<int>(int_part_c);
+        int in_next_c = std::min(in_c + 1, static_cast<int>(_width - 1));
 
-        float v1 = in(in_c, in_r, ch);         // A
-        float v2 = in(in_c + 1, in_r, ch);     // B
-        float v3 = in(in_c, in_r + 1, ch);     // C
-        float v4 = in(in_c + 1, in_r + 1, ch); // D
+        float v1 = in(in_c, in_r, ch);           // A
+        float v2 = in(in_next_c, in_r, ch);      // B
+        float v3 = in(in_c, in_next_r, ch);      // C
+        float v4 = in(in_next_c, in_next_r, ch); // D
 
         float res = c1 * v1 + c2 * v2 + c3 * v3 + c4 * v4;
 
