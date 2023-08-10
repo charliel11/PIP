@@ -7,7 +7,7 @@
 
 using namespace pip;
 
-static void BM_resize_512(benchmark::State &state) {
+void BM_resize_512(benchmark::State &state) {
   Image a;
   ImageF32 b;
   read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
@@ -18,7 +18,7 @@ static void BM_resize_512(benchmark::State &state) {
 }
 BM(resize_512);
 
-static void BM_resize_2048(benchmark::State &state) {
+void BM_resize_2048(benchmark::State &state) {
   Image a;
   ImageF32 b;
   read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
@@ -29,7 +29,7 @@ static void BM_resize_2048(benchmark::State &state) {
 }
 BM(resize_2048);
 
-static void BM_resize_6144(benchmark::State &state) {
+void BM_resize_6144(benchmark::State &state) {
   Image a;
   ImageF32 b;
   read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
@@ -40,46 +40,34 @@ static void BM_resize_6144(benchmark::State &state) {
 }
 BM(resize_6144);
 
-constexpr size_t n = 1 << 28;
-Vector_Aligned64<float> a(n, 0);
-
 void BM_serial_add(benchmark::State &state) {
+  Image a;
+  read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
+  size_t n = a.shape()[0] * a.shape()[1] * a.shape()[2];
+  Vector_Aligned64<uint8_t> in(n, 0);
+  Vector_Aligned64<float_t> out(n, 0);
   for (auto _ : state) {
+#pragma omp parallel for
     for (size_t i = 0; i < n; ++i) {
-      a[i] = a[i] + 1;
+      out[i] = in[i];
     }
-    benchmark::DoNotOptimize(a);
   }
 }
-// BM(serial_add);
+BM(serial_add);
 
-void BM_simd_add(benchmark::State &state) {
-#define NUM_ELEMENTS (10000000)
+void BM_uAlign_add(benchmark::State &state) {
+  Image a;
+  read_image(a, (std::string(PROJECTDIR) + "/original.jpg").c_str());
+  size_t n = a.shape()[0] * a.shape()[1] * a.shape()[2];
+  std::vector<uint8_t> in(n, 0);
+  std::vector<float_t> out(n, 0);
   for (auto _ : state) {
-    int *array = (int *)malloc(sizeof(int) * NUM_ELEMENTS);
-    // Perform a memory-bound operation - access array elements in a loop
-    int i;
-    for (i = 0; i < NUM_ELEMENTS; i++) {
-      array[i] = i;       // Write to the array (memory write)
-      int val = array[i]; // Read from the array (memory read)
+#pragma omp parallel for
+    for (size_t i = 0; i < n; ++i) {
+      out[i] = in[i];
     }
-
-    // Free the allocated memory
-    free(array);
-    benchmark::DoNotOptimize(array);
   }
 }
-// BM(simd_add);
-
-// void BM_parallel_add(benchmark::State &state) {
-//   for (auto _ : state) {
-// #pragma omp parallel for
-//     for (size_t i = 0; i < n; ++i) {
-//       a[i] = a[i] + 1;
-//     }
-//     benchmark::DoNotOptimize(a);
-//   }
-// }
-// BM(parallel_add);
+BM(uAlign_add);
 
 BENCHMARK_MAIN();
