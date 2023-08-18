@@ -4,6 +4,7 @@
 
 namespace pip {
 
-void resize(const Image &in, ImageF32 &out, size_t width, size_t height);
+Image resize(const Image &in, size_t width, size_t height);
+// Imagee resize(const Imagee &in, size_t width, size_t height);
 
-}
+} // namespace pip

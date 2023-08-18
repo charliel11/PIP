@@ -1,8 +1,10 @@
+#include "Image.h"
 #include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <math.h>
 #include <numeric>
+#include <variant>
 #include <x86intrin.h>
 
 #include <omp.h>
@@ -39,13 +41,14 @@ namespace pip {
 
 #endif
 
-void resize(const Image &in, ImageF32 &out, size_t width, size_t height) {
+Image resize(const Image &_in, size_t width, size_t height) {
+  const ImageU8 &in = std::get<ImageU8>(_in);
 
   size_t _width = in.shape()[0];
   size_t _height = in.shape()[1];
   size_t channel = in.shape()[2];
 
-  out.reshape(width, height, channel);
+  ImageF32 out({width, height, channel});
 
   float w_ratio =
       static_cast<float>(_width - 1) / static_cast<float>(width - 1);
@@ -129,7 +132,7 @@ void resize(const Image &in, ImageF32 &out, size_t width, size_t height) {
       }
     }
   }
-  return;
+  return out;
 }
 
 } // namespace pip

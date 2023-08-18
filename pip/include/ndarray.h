@@ -6,11 +6,15 @@
 #include <type_traits>
 #include <vector>
 
+#include <pod.h>
+
 namespace pip {
 
-template <std::size_t N, class T, std::size_t LoBound = 0,
-          std::size_t HiBound = LoBound, class AllocatorT = AlignedAllocator<T>>
+template <std::size_t N, class U, std::size_t LoBound = 0,
+          std::size_t HiBound = LoBound,
+          class AllocatorT = AlignedAllocator<pod<U>>>
 class ndarray {
+  using T = pod<U>;
   static_assert(N > 0, "N cannot be 0");
   static_assert(std::is_same_v<std::remove_reference_t<std::remove_cv_t<T>>, T>,
                 "T cannot be cvref");
@@ -30,7 +34,7 @@ class ndarray {
   }
 
 public:
-  using value_type = T;
+  using value_type = U;
 
   ndarray() = default;
   ndarray(ndarray const &) = default;
@@ -40,15 +44,18 @@ public:
   ~ndarray() = default;
 
   explicit ndarray(Shape const &shape)
-      : m_arr(_calc_size(shape)), m_shape(shape) {}
+      : m_arr(_calc_size(shape)), m_shape(shape) {
+  }
 
   explicit ndarray(Shape const &shape, T const &value)
-      : m_arr(_calc_size(shape), value), m_shape(shape) {}
+      : m_arr(_calc_size(shape), value), m_shape(shape) {
+  }
 
   template <class... Ts,
             std::enable_if_t<
                 sizeof...(Ts) == N && (std::is_integral_v<Ts> && ...), int> = 0>
-  explicit ndarray(Ts const &...ts) : ndarray(Shape{ts...}) {}
+  explicit ndarray(Ts const &...ts) : ndarray(Shape{ts...}) {
+  }
 
   void reshape(Shape const &shape) {
     std::size_t size = _calc_size(shape);
@@ -64,7 +71,9 @@ public:
     m_arr.resize(size, value);
   }
 
-  void shrink_to_fit() { m_arr.shrink_to_fit(); }
+  void shrink_to_fit() {
+    m_arr.shrink_to_fit();
+  }
 
   template <class... Ts,
             std::enable_if_t<
@@ -73,7 +82,9 @@ public:
     this->reshape(Shape{ts...});
   }
 
-  constexpr Shape shape() const noexcept { return m_shape; }
+  constexpr Shape shape() const noexcept {
+    return m_shape;
+  }
 
   constexpr std::size_t shape(std::size_t i) const noexcept {
     return m_shape[i];
@@ -97,9 +108,13 @@ public:
     return linearize(dim);
   }
 
-  constexpr T *data() noexcept { return m_arr.data(); }
+  constexpr T *data() noexcept {
+    return m_arr.data();
+  }
 
-  constexpr T const *data() const noexcept { return m_arr.data(); }
+  constexpr T const *data() const noexcept {
+    return m_arr.data();
+  }
 
   constexpr T &operator()(Dim const &dim) noexcept {
     return data()[linearize(dim)];
@@ -112,14 +127,14 @@ public:
   template <class... Ts,
             std::enable_if_t<
                 sizeof...(Ts) == N && (std::is_integral_v<Ts> && ...), int> = 0>
-  constexpr T &operator()(Ts const &...ts) noexcept {
+  constexpr U &operator()(Ts const &...ts) noexcept {
     return operator()(Dim{ts...});
   }
 
   template <class... Ts,
             std::enable_if_t<
                 sizeof...(Ts) == N && (std::is_integral_v<Ts> && ...), int> = 0>
-  constexpr T const &operator()(Ts const &...ts) const noexcept {
+  constexpr U const &operator()(Ts const &...ts) const noexcept {
     return operator()(Dim{ts...});
   }
 
@@ -131,9 +146,13 @@ public:
     return operator()(linearize(dim));
   }
 
-  T &at(Dim const &dim) { return data()[safe_linearize(dim)]; }
+  T &at(Dim const &dim) {
+    return data()[safe_linearize(dim)];
+  }
 
-  T const &at(Dim const &dim) const { return data()[safe_linearize(dim)]; }
+  T const &at(Dim const &dim) const {
+    return data()[safe_linearize(dim)];
+  }
 
   template <class... Ts,
             std::enable_if_t<

@@ -4,17 +4,18 @@
 #include <rwimage.h>
 #include <stb_image.h>
 #include <stb_image_write.h>
+#include <variant>
 
 namespace pip {
 
-void read_image(Image &a, const char *path) {
+Image read_image(const char *path) {
   int nx = 0, ny = 0, comp = 0;
   unsigned char *p = stbi_load(path, &nx, &ny, &comp, 0);
   if (!p) {
     perror(path);
     exit(-1);
   }
-  a.reshape((size_t)nx, (size_t)ny, (size_t)comp);
+  ImageU8 a((size_t)nx, (size_t)ny, (size_t)comp);
   for (int c = 0; c < comp; c++) {
     for (int y = 0; y < ny; y++) {
       for (int x = 0; x < nx; x++) {
@@ -23,9 +24,11 @@ void read_image(Image &a, const char *path) {
     }
   }
   stbi_image_free(p);
+  return a;
 }
 
-void write_image(Image const &a, const char *path) {
+void write_image(Image const &b, const char *path) {
+  ImageU8 const &a = std::get<ImageU8>(b);
   int nx = a.shape(0);
   int ny = a.shape(1);
   int comp = a.shape(2);
@@ -53,4 +56,5 @@ void write_image(Image const &a, const char *path) {
     exit(-1);
   }
 }
+
 } // namespace pip

@@ -197,7 +197,7 @@ void median_selection_2row(Vector_Aligned64<T> &arr, int mask_width) {
 }
 
 template <typename T, typename F>
-void blur_2D(const Image &img_i, Image &img_o, int r_begin, int r_end,
+void blur_2D(const ImageU8 &img_i, ImageU8 &img_o, int r_begin, int r_end,
              int c_begin, int c_end, int ch, Vector_Aligned64<T> &arr, F func) {
   int i = 0;
   for (int r = r_begin; r <= r_end; ++r) {
@@ -215,12 +215,16 @@ void blur_2D(const Image &img_i, Image &img_o, int r_begin, int r_end,
   return;
 }
 
-void median_blur(const Image &in_img, Image &out_img, int mask_width,
+void median_blur(const Image &_in_img, Image &_out_img, int mask_width,
                  int mask_height) {
   using buffer_type = simd_int;
   using vector_aligned64 = Vector_Aligned64<buffer_type>;
+
+  const ImageU8 &in_img = std::get<ImageU8>(_in_img);
+  ImageU8 &out_img = std::get<ImageU8>(_out_img);
+
   constexpr size_t blocksize = 64;
-  constexpr int ratio = sizeof(buffer_type) / sizeof(Image::value_type);
+  constexpr int ratio = sizeof(buffer_type) / sizeof(ImageU8::value_type);
 
   auto [width, height, channel] = in_img.shape();
   out_img.reshape(width, height, channel);
@@ -262,7 +266,7 @@ void median_blur(const Image &in_img, Image &out_img, int mask_width,
               // memcpy(&out_img(c, rr, ch), &arr[n >> 1], sizeof(buffer_type));
               blur_2D(in_img, out_img, rr - extend_row, rr + extend_row + a,
                       c - extend_col, c + extend_col, ch, arr,
-                      median_selection_2row<buffer_type, Image::value_type>);
+                      median_selection_2row<buffer_type, ImageU8::value_type>);
               memcpy(&out_img(c, rr, ch), &arr[mask_width + 1],
                      sizeof(buffer_type));
               memcpy(&out_img(c, rr + 1, ch), &arr[n - mask_width - 1],
